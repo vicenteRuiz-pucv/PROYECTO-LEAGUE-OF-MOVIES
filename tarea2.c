@@ -7,12 +7,12 @@
 
 typedef struct {
   char id[100];
-  char title[100];
+  char title[300];
   List *genres;
   int year;
-  char director[100];
+  char director[300];
   int similitud;
-} Film;
+} pelicula;
 
 // Menú principal
 void mostrarMenuPrincipal() {
@@ -55,7 +55,7 @@ int is_equal_int(void *key1, void *key2) {
 /**
  * Carga películas desde un archivo CSV y las almacena en un mapa por ID.
  */
-void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada) {
+void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada,Map* pelis_titulo) {
   // Intenta abrir el archivo CSV que contiene datos de películas
   FILE *archivo = fopen("Top1500.csv", "r");
   if (archivo == NULL) {
@@ -72,20 +72,42 @@ void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada) {
   // Lee cada línea del archivo CSV hasta el final
   while ((campos = leer_linea_csv(archivo, ',')) != NULL) {
     // Crea una nueva estructura Film y almacena los datos de cada película
-    Film *peli = (Film *)malloc(sizeof(Film));
+    pelicula *peli = (pelicula *)malloc(sizeof(pelicula));
     strcpy(peli->id, campos[1]);        // Asigna ID
     strcpy(peli->title, campos[5]);     // Asigna título
     peli->genres = split_string(campos[11], ",");       // Inicializa la lista de géneros
     peli->year = atoi(campos[10]); // Asigna año, convirtiendo de cadena a entero
-
+    strcpy(peli->director,campos[14]);
     
     // Inserta la película en el mapa usando el ID como clave
     map_insert(pelis_byid, peli->id, peli);
-  
+
+    
+    //CREAMOS UN MAPA DE TITULOS!
+    map_insert(pelis_titulo,peli->title,peli);
+    
+    //LLENAR MAPA DECADAS
+    int *calculoDecada = (int*) malloc(sizeof(int));
+    *calculoDecada = (peli->year / 10) * 10;
+    MapPair *busquedaDecada= map_search(pelis_decada,calculoDecada);
+    if(busquedaDecada == NULL)
+    {
+      List* lista_decada= list_create();
+      list_pushBack(lista_decada,peli);
+      map_insert(pelis_decada,calculoDecada,lista_decada);
+    }
+    else
+    {
+      list_pushBack((List*)busquedaDecada->value,peli);
+      free(calculoDecada);
+    }
+    
+    
     // Obtiene el primer género de la lista de géneros de la película
     char *genre = list_first(peli->genres);
     // Itera sobre cada género de la película
-    while (genre != NULL) {
+    while (genre != NULL) 
+    {
         // Busca el género en el mapa pelis_bygenres
         MapPair *genre_pair = map_search(pelis_bygenres, genre);
 
@@ -102,21 +124,6 @@ void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada) {
 
         // Avanza al siguiente género en la lista
         genre = list_next(peli->genres);
-        //LLENAR MAPA DECADAS
-        int *calculoDecada = (int*) malloc(sizeof(int));
-        *calculoDecada = (peli->year / 10) * 10;
-        MapPair *busquedaDecada= map_search(pelis_decada,calculoDecada);
-        if(busquedaDecada == NULL)
-        {
-          List* lista_decada= list_create();
-          list_pushBack(lista_decada,peli);
-          map_insert(pelis_decada,calculoDecada,lista_decada);
-        }
-        else
-        {
-          list_pushBack((List*)busquedaDecada->value,peli);
-          free(calculoDecada);
-        }
     }
     
   }
@@ -157,7 +164,7 @@ void buscar_por_id(Map *pelis_byid) {
   // Si se encontró el par clave-valor, se extrae y muestra la información de la
   // película
   if (pair != NULL) {
-    Film *peli =
+    pelicula *peli =
         pair->value; // Obtiene el puntero a la estructura de la película
     // Muestra el título y el año de la película
     printf("Título: %s, Año: %d\n", peli->title, peli->year);
@@ -166,6 +173,124 @@ void buscar_por_id(Map *pelis_byid) {
     printf("La película con id %s no existe\n", id);
   }
 }
+
+void cinematch(Map* principal, Map* generos, Map* decada,Map* titulos)
+{
+  printf("Ingrese el nombre de una Pelicula! : ");
+  int c;
+  while((c = getchar()) != '\n' && c != EOF);
+  
+  //PRIMERO RECIBIMOS EL NOMBRE DE UNA PELICULA.
+  char nombrePelicula[100];
+  MapPair* par = NULL;
+  while(1)
+  {  
+    //LEER EL NOMBRE DE LA PELICULA CON ESPACIOS EN BLANCO
+    fgets(nombrePelicula,sizeof(nombrePelicula),stdin);
+    //ELIMINAR SALTO DE LINEA
+    nombrePelicula[strcspn(nombrePelicula,"\r\n")] = '\0';
+    //HACEMOS LA BUSQUEDA PARA QUE LEA ESPACIOS EN BLANCO!
+    par = map_search(titulos,(void*)nombrePelicula);
+    if(par == NULL)
+    {
+      printf("Actualmente la pelicula ingresada no se encuentra en nuestro catalogo..\n");
+    }
+    else break;
+  }
+
+  
+  
+  //accedemos a el valor del par(la pelicula) en el mapa de titulos
+  pelicula* ingresada = (pelicula*)par->value;
+  printf("procesando afinidad.....\n");
+  //arreglo que tndra el top 5
+  pelicula* top5[5] = {NULL, NULL, NULL, NULL, NULL};
+  //CREAMOS UN MAPA PARA EVITAR REPETICION!
+  Map* procesadas = map_create(is_equal_str);
+
+  //BUSCAR COINCIDENCIAS EN LOS GENEROS
+
+  char* genBase = (char*)list_first(ingresada->genres);
+  while(genBase != NULL)
+  {
+      MapPair* parGenero = map_search(generos,genBase);
+
+      if(parGenero != NULL)
+      {
+        List* listaMismoGenero = (List*) parGenero->value;
+        pelicula* peliEvaluar=(pelicula*) list_first(listaMismoGenero);
+      
+        while(peliEvaluar != NULL)
+          {
+            if(strcmp(peliEvaluar->id,ingresada->id) != 0 && map_search(procesadas,peliEvaluar->id) == NULL)
+            {
+              map_insert(procesadas,peliEvaluar->id,peliEvaluar);
+
+              //CALCULO DEL PUNTAJE!
+              int similitud = 0;
+              //DIRECTOR
+              if(strcmp(ingresada->director,peliEvaluar->director) == 0) similitud += 3;
+              //DECADA
+              if((ingresada->year / 10) == (peliEvaluar->year / 10)) similitud += 2;
+              //CADA GENERO!
+              char* g1 = (char*) list_first(ingresada->genres);
+              while(g1 != NULL)
+                {
+                  char* g2 = (char*)list_first(peliEvaluar->genres);
+                  while(g2 != NULL)
+                    {
+                      if(strcmp(g1,g2) == 0)
+                      {
+                        similitud++;
+                        break;
+                      }
+                      g2= (char *)list_next(peliEvaluar->genres);
+                    }
+                  g1 = (char*)list_next(ingresada->genres);
+                }
+
+              peliEvaluar->similitud = similitud;
+              if(top5[4] == NULL || similitud > top5[4]->similitud)
+              {
+                for(int i = 0; i < 5; i++)
+                  {
+                    if(top5[i]==NULL || similitud > top5[i]->similitud)
+                    {
+                      for(int j = 4; j > i; j--)
+                        {
+                          top5[j] = top5[j-1];
+                        }
+                      top5[i]= peliEvaluar;
+                      break;
+                    }
+                  }
+              }
+              
+            }
+            peliEvaluar= (pelicula*) list_next(listaMismoGenero);
+          }
+          
+      }
+      genBase= (char*)list_next(ingresada->genres);
+  }
+    printf("TOP 5 PELICULAS RECOMENDADAS\n");
+    for(int i = 0; i < 5; i++)
+      {
+        if(top5[i]!=NULL)
+        {
+          printf("%d. Título: %s, Año: %d, Géneros: ",i+1,top5[i]->title,top5[i]->year);
+          char* g= (char*) list_first(top5[i]->genres);
+          while(g != NULL)
+            {
+              printf("%s",g);
+              g= (char*)list_next(top5[i]->genres);
+              if(g!= NULL) printf(", ");
+            }
+          printf(" Puntaje de Afinidad : %i \n",top5[i]->similitud);
+        } 
+      }
+}
+
 
 
 int main() {
@@ -179,8 +304,10 @@ int main() {
   Map *pelis_bygenres = map_create(is_equal_str);
   //M. DECADA
   Map *pelis_decada = map_create(is_equal_int);
-
-  cargar_peliculas(pelis_byid, pelis_bygenres,pelis_decada);
+  //M. TITULO
+  Map *pelis_titulo = map_create(is_equal_str);
+  
+  cargar_peliculas(pelis_byid, pelis_bygenres,pelis_decada,pelis_titulo);
 
   do {
     mostrarMenuPrincipal();
@@ -189,7 +316,7 @@ int main() {
 
     switch (opcion) {
     case '1':
-      //CINEMATCH
+      cinematch(pelis_byid,pelis_bygenres,pelis_decada,pelis_titulo);
       break;
     case '2':
       //CINECLASH
