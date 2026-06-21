@@ -308,12 +308,13 @@ void cineclash(Map *mapGeneros){
   char generoElegido[100];
   MapPair *par = NULL;
   List *lista_peliculas = NULL;
-  printf("Ingrese el genero para iniciar el torneo: "); //pedimos el genero para hacer el torneo
-  scanf(" %[^\n]", generoElegido);
-  par = map_search(mapGeneros, generoElegido); // se busca en el mapa de generos si este existe
-  if(par == NULL){
-    printf("Genero no encontrado.");
-    return;
+  while(par == NULL){
+    printf("Ingrese el genero para iniciar el torneo: "); //pedimos el genero para hacer el torneo
+    scanf(" %[^\n]", generoElegido);
+    par = map_search(mapGeneros, generoElegido); // se busca en el mapa de generos si este existe
+    if(par == NULL){
+      printf("Genero no encontrado. Ingrese un genero valido\n\n");
+    }
   }
   lista_peliculas = (List*)par->value;
   int peliculasDelGenero = sumLista(lista_peliculas); //contamos cuantas peliculas de este genero hay
