@@ -1,6 +1,7 @@
 #include "tdas/extra.h"
 #include "tdas/list.h"
 #include "tdas/map.h"
+#include "tdas/queue.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -293,9 +294,8 @@ void cinematch(Map* principal, Map* generos, Map* decada,Map* titulos)
       }
 }
 
-int sumLista(List *lista, MapPair *par){
-  lista = (List*)par->value;
-  int sum;
+int sumLista(List *lista){
+  int sum = 0;
   pelicula *peli = list_first(lista);
   while(peli != NULL){
     sum++;
@@ -308,14 +308,15 @@ void cineclash(Map *mapGeneros){
   char generoElegido[100];
   MapPair *par = NULL;
   List *lista_peliculas = NULL;
-  printf("Ingrese el genero para iniciar el torneo: \n"); //pedimos el genero para hacer el torneo
-  fgets(generoElegido, sizeof(generoElegido), stdin);
+  printf("Ingrese el genero para iniciar el torneo: "); //pedimos el genero para hacer el torneo
+  scanf(" %[^\n]", generoElegido);
   par = map_search(mapGeneros, generoElegido); // se busca en el mapa de generos si este existe
   if(par == NULL){
     printf("Genero no encontrado.");
     return;
   }
-  int peliculasDelGenero = sumLista(lista_peliculas, par); //contamos cuantas peliculas de este genero hay
+  lista_peliculas = (List*)par->value;
+  int peliculasDelGenero = sumLista(lista_peliculas); //contamos cuantas peliculas de este genero hay
 
   //creamos un arreglo temporal para guardar la lista de peliculas de el genero elegido
   pelicula **tempPelis = (pelicula**)malloc(peliculasDelGenero * sizeof(pelicula *));
@@ -339,47 +340,47 @@ void cineclash(Map *mapGeneros){
       }
     }
     if(seRepite == false){
-      posUsada[pelisYaEscogidas] = posRandom;
+      posUsadas[pelisYaEscogidas] = posRandom;
       queue_insert(torneo, tempPelis[posRandom]);
       pelisYaEscogidas++;
     }
   }
   free(tempPelis);
 
-  printf("Comienza el CineClash: %s\n", generoElegido);
+  printf("Comienza el CineClash del Genero: %s\n", generoElegido);
   for(int vs = 1; vs <= 7; vs++){
     pelicula *peliA = (pelicula*)queue_remove(torneo);
     pelicula *peliB = (pelicula*)queue_remove(torneo);
 
     int voto = 0;
     if(vs == 1 || vs == 2 || vs == 3 || vs == 4)
-      printf("CUARTOS DE FINAL DEL CINECLASH!\n");
+      printf("\nCUARTOS DE FINAL DEL CINECLASH!\n");
     else if(vs == 5 || vs == 6)
-      printf("SEMIFINALES DEL CINECLASH!\n");
+      printf("\nSEMIFINALES DEL CINECLASH!\n");
     else
-      printf("FINAL DEL CINECLASH!\n");
+      printf("\nFINAL DEL CINECLASH!\n");
     
     while(voto != 1 && voto != 2){
       printf("Versus %d: [1] %s vs [2] %s\n", vs, peliA->title, peliB->title);
       printf("Ingresa tu eleccion: ");
       scanf("%d", &voto);
       if(voto !=  1 && voto != 2){
-        printf("Voto invalido");
+        printf("Voto invalido\n");
       }
     }
     if(voto == 1){
       queue_insert(torneo, peliA);
-      printf("El ganador de esta ronda fue: %s\n", peliA->title);
+      printf("\nEl ganador de esta ronda fue: %s\n", peliA->title);
     }
     else{
       queue_insert(torneo, peliB);
-      printf("El ganador de esta ronda fue: %s\n", peliB->title");
+      printf("\nEl ganador de esta ronda fue: %s\n", peliB->title);
     }
   }
   pelicula *ganador = (pelicula*)queue_remove(torneo);
-  printf("-------------------------------------------\n");
+  printf("\n-------------------------------------------\n");
   printf("El Ganador Del CineClash Es: %s\n", ganador->title);
-  printf("-------------------------------------------");
+  printf("-------------------------------------------\n");
   queue_clean(torneo);
 }
 
@@ -412,7 +413,7 @@ int main() {
       cinematch(pelis_byid,pelis_bygenres,pelis_decada,pelis_titulo);
       break;
     case '2':
-      //cineclash(pelis_byid, pelis_bygenres)
+      cineclash(pelis_bygenres);
       break;
     case '3':
       //MARATHON MAKER
