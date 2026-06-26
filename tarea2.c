@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 typedef struct {
   char id[100];
@@ -12,6 +13,7 @@ typedef struct {
   int year;
   char director[100];
   int similitud;
+  float rating;
 } Film;
 
 // Menú principal
@@ -75,7 +77,8 @@ void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada) {
     Film *peli = (Film *)malloc(sizeof(Film));
     strcpy(peli->id, campos[1]);        // Asigna ID
     strcpy(peli->title, campos[5]);     // Asigna título
-    peli->genres = split_string(campos[11], ",");       // Inicializa la lista de géneros
+    peli->genres = split_string(campos[11], ",");
+    peli->rating = atof(campos[8]);// Inicializa la lista de géneros
     peli->year = atoi(campos[10]); // Asigna año, convirtiendo de cadena a entero
 
     
@@ -166,8 +169,26 @@ void buscar_por_id(Map *pelis_byid) {
     printf("La película con id %s no existe\n", id);
   }
 }
+void mostrar_marathon(Film *p, int pos, int total){
+  if(p == NULL)return;
+  printf("\n");
+  printf("  +--------------------------------------------------+\n");
+  printf("  |  Pelicula  %d de %d\n",pos,total);
+  printf("  |  Titulo  : %s\n",p->title);
+  printf("  |  Año     : %d\n",p->year);
+  printf("  |  Rating  : %.1f\n",p->rating);
+  printf("  |  Generos : ");
+  char *g = list_first(p->genres);
+  while (g!= NULL){
+    printf("%s",g);
+    g = list_next(p->genres);
+    if (g != NULL)printf(", ");
+  }
+  printf("\n");
+  printf("  +--------------------------------------------------+\n");
+}
 
-
+void marathon_maker(
 int main() {
   char opcion; // Variable para almacenar una opción ingresada por el usuario
                 
