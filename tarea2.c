@@ -5,7 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <stdlib.h>
+#include <ctype.h>
+#include <stdbool.h>
+#define ABS(x) ((x) < 0 ? -(x) : (x))
 #include "tdas/queue.h"
 
 typedef struct {
@@ -13,7 +15,7 @@ typedef struct {
   char title[300];
   List *genres;
   int year;
-  char director[100];
+  char director[300];
   int similitud;
   float rating;
 } pelicula;
@@ -67,7 +69,7 @@ int is_equal_int(void *key1, void *key2) {
 /**
  * Carga películas desde un archivo CSV y las almacena en un mapa por ID.
  */
-void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada) {
+void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada, Map *pelis_titulo) {
   // Intenta abrir el archivo CSV que contiene datos de películas
   FILE *archivo = fopen("Top1500.csv", "r");
   if (archivo == NULL) {
@@ -89,15 +91,20 @@ void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada) {
     strcpy(peli->title, campos[5]);     // Asigna título
     peli->genres = split_string(campos[11], ",");       // Inicializa la lista de géneros
     peli->year = atoi(campos[10]); // Asigna año, convirtiendo de cadena a entero
-
+    strcpy(peli->director, campos[14]);
+    peli->rating = atof(campos[8]);
+    
     
     // Inserta la película en el mapa usando el ID como clave
     map_insert(pelis_byid, peli->id, peli);
+    map_insert(pelis_titulo, peli->title, peli);
   
     // Obtiene el primer género de la lista de géneros de la película
     char *genre = list_first(peli->genres);
     // Itera sobre cada género de la película
     while (genre != NULL) {
+
+        if (genre[0] == ' ')genre++;
         // Busca el género en el mapa pelis_bygenres
         MapPair *genre_pair = map_search(pelis_bygenres, genre);
 
@@ -180,128 +187,11 @@ void buscar_por_id(Map *pelis_byid) {
 }
 
 
-void cinematch(Map* principal, Map* generos, Map* decada,Map* titulos)
-{
-  printf("Ingrese el nombre de una Pelicula! : ");
-  int c;
-  while((c = getchar()) != '\n' && c != EOF);
-  
-  //PRIMERO RECIBIMOS EL NOMBRE DE UNA PELICULA.
-  char nombrePelicula[100];
-  MapPair* par = NULL;
-  while(1)
-  {  
-    //LEER EL NOMBRE DE LA PELICULA CON ESPACIOS EN BLANCO
-    fgets(nombrePelicula,sizeof(nombrePelicula),stdin);
-    //ELIMINAR SALTO DE LINEA
-    nombrePelicula[strcspn(nombrePelicula,"\r\n")] = '\0';
-    //HACEMOS LA BUSQUEDA PARA QUE LEA ESPACIOS EN BLANCO!
-    par = map_search(titulos,(void*)nombrePelicula);
-    if(par == NULL)
-    {
-      printf("Actualmente la pelicula ingresada no se encuentra en nuestro catalogo..\n");
-    }
-    else break;
-  }
-
-  
-  
-  //accedemos a el valor del par(la pelicula) en el mapa de titulos
-  pelicula* ingresada = (pelicula*)par->value;
-  printf("procesando afinidad.....\n");
-  //arreglo que tndra el top 5
-  pelicula* top5[5] = {NULL, NULL, NULL, NULL, NULL};
-  //CREAMOS UN MAPA PARA EVITAR REPETICION!
-  Map* procesadas = map_create(is_equal_str);
-
-  //BUSCAR COINCIDENCIAS EN LOS GENEROS
-
-  char* genBase = (char*)list_first(ingresada->genres);
-  while(genBase != NULL)
-  {
-      MapPair* parGenero = map_search(generos,genBase);
-
-      if(parGenero != NULL)
-      {
-        List* listaMismoGenero = (List*) parGenero->value;
-        pelicula* peliEvaluar=(pelicula*) list_first(listaMismoGenero);
-      
-        while(peliEvaluar != NULL)
-          {
-            if(strcmp(peliEvaluar->id,ingresada->id) != 0 && map_search(procesadas,peliEvaluar->id) == NULL)
-            {
-              map_insert(procesadas,peliEvaluar->id,peliEvaluar);
-
-              //CALCULO DEL PUNTAJE!
-              int similitud = 0;
-              //DIRECTOR
-              if(strcmp(ingresada->director,peliEvaluar->director) == 0) similitud += 3;
-              //DECADA
-              if((ingresada->year / 10) == (peliEvaluar->year / 10)) similitud += 2;
-              //CADA GENERO!
-              char* g1 = (char*) list_first(ingresada->genres);
-              while(g1 != NULL)
-                {
-                  char* g2 = (char*)list_first(peliEvaluar->genres);
-                  while(g2 != NULL)
-                    {
-                      if(strcmp(g1,g2) == 0)
-                      {
-                        similitud++;
-                        break;
-                      }
-                      g2= (char *)list_next(peliEvaluar->genres);
-                    }
-                  g1 = (char*)list_next(ingresada->genres);
-                }
-
-              peliEvaluar->similitud = similitud;
-              if(top5[4] == NULL || similitud > top5[4]->similitud)
-              {
-                for(int i = 0; i < 5; i++)
-                  {
-                    if(top5[i]==NULL || similitud > top5[i]->similitud)
-                    {
-                      for(int j = 4; j > i; j--)
-                        {
-                          top5[j] = top5[j-1];
-                        }
-                      top5[i]= peliEvaluar;
-                      break;
-                    }
-                  }
-              }
-              
-            }
-            peliEvaluar= (pelicula*) list_next(listaMismoGenero);
-          }
-          
-      }
-      genBase= (char*)list_next(ingresada->genres);
-  }
-    printf("TOP 5 PELICULAS RECOMENDADAS\n");
-    for(int i = 0; i < 5; i++)
-      {
-        if(top5[i]!=NULL)
-        {
-          printf("%d. Título: %s, Año: %d, Géneros: ",i+1,top5[i]->title,top5[i]->year);
-          char* g= (char*) list_first(top5[i]->genres);
-          while(g != NULL)
-            {
-              printf("%s",g);
-              g= (char*)list_next(top5[i]->genres);
-              if(g!= NULL) printf(", ");
-            }
-          printf(" Puntaje de Afinidad : %i \n",top5[i]->similitud);
-        } 
-      }
-}
-
-void cargar_pool_preguntas(preguntaOracle pool[]){
+int cargar_pool_preguntas(preguntaOracle pool[]){
   FILE *archivo = fopen("PREGUNTASORACLE.CSV", "r");
   if (archivo == NULL){
     printf("ERROR: no se encontro el archivo PREGUNTASORACLE.CSV\n");
-    return;
+    return 0;
   }
   int count = 0;
   char linea[300];
@@ -352,6 +242,8 @@ void cineoracle(Map* pelis_byid){
 
   while(cant_candidatas > 1){
     int indices_sweet_spot[71];
+    int cant_sweet_spot = 0;
+    int indices_respaldo[71];
     int cant_respaldo = 0;
     int mejor_distancia_respaldo = 999999;
     
@@ -376,7 +268,7 @@ void cineoracle(Map* pelis_byid){
             g = list_next(p->genres);
           }
         }
-        else if(pool[i].tipo = 2){
+        else if(pool[i].tipo == 2){
           if (((p->year / 10)*10) == atoi(pool[i].atributo))coinciden++;
         }
         else if(pool[i].tipo == 3){
@@ -394,12 +286,13 @@ void cineoracle(Map* pelis_byid){
       if (coinciden <= 0 || coinciden >= cant_candidatas)continue;
 
       if (coinciden >= limite_inferior && coinciden <= limite_superior){
-        indicen_sweet_spot[cant_sweet_spot] = i;
+        indices_sweet_spot[cant_sweet_spot] = i;
         cant_sweet_spot++;
       }
-      int distancia = abs(coinciden - (cant_candidatas / 2));
+      int distancia = ABS(coinciden - (cant_candidatas / 2));
       if (distancia < mejor_distancia_respaldo){
-        mejor_distancia_respaldo[0] = i;
+        mejor_distancia_respaldo = distancia;
+        indices_respaldo[0] = i;
         cant_respaldo = 1;
       }
       else if (distancia == mejor_distancia_respaldo || distancia == mejor_distancia_respaldo + 1){
@@ -407,7 +300,7 @@ void cineoracle(Map* pelis_byid){
         cant_respaldo++;
       }
     }
-    int indice_elegido;
+    int indice_elegido = -1;
     if (cant_sweet_spot > 0){
       indice_elegido = indices_sweet_spot[rand() % cant_sweet_spot];
     }
@@ -415,7 +308,7 @@ void cineoracle(Map* pelis_byid){
       indice_elegido = indices_respaldo[rand() % cant_respaldo];
     }
     else break;
-  }
+   
   pool[indice_elegido].usada = 1;
 
   preguntaOracle* pregunta = (preguntaOracle*)malloc(sizeof(preguntaOracle));
@@ -454,31 +347,76 @@ void cineoracle(Map* pelis_byid){
       if (((p->year / 10) * 10) == atoi(preguntaActual->atributo))tiene_atributo = 1;
     }
     else if (preguntaActual->tipo == 3){
-      if (((p->year / 10) * 10) == atoi(preguntaActual->atributo))tiene_atributo = 1;
+      if (strstr(p->director, preguntaActual->atributo) != NULL)tiene_atributo = 1;
     }
-    else if (preguntaActual->tipo == 2){
-      if (((p->year / 10) * 10) == atoi(preguntaActual->atributo))tiene_atributo = 1;
+    else if (preguntaActual->tipo == 4){
+      if (p->rating >= atof(preguntaActual->atributo))tiene_atributo = 1;
     }
-    else if (preguntaActual->tipo == 2){
-      if (((p->year / 10) * 10) == atoi(preguntaActual->atributo))tiene_atributo = 1;
+    else if (preguntaActual->tipo == 5){
+      if (p->year < atoi(preguntaActual->atributo))tiene_atributo = 1;
     }
+    int mantener = ((respuesta == 1 && tiene_atributo) || (respuesta == 2 && !tiene_atributo));
+
+    if (!mantener){
+      list_popCurrent(candidatas);
+      cant_candidatas -= 1;
+      p = (pelicula*)list_first(candidatas);
+    }
+    else p = (pelicula*)list_next(candidatas);
   }
+  free(preguntaActual);
+  if (cant_candidatas == 0){
+    printf("\n!Eres demasiado dificil de leer. Intentalo de nuevo¡\n");
+    break;
+  }
+}
+
+if (cant_candidatas >= 1){
+  pelicula* mejorPelicula = (pelicula*)list_first(candidatas);
+  pelicula* control = (pelicula*)list_next(candidatas);
+  while(control != NULL){
+    if (control->rating > mejorPelicula->rating)mejorPelicula = control;
+    control = (pelicula*)list_next(candidatas);
+  }
+
+  printf("\n*****************************************************\n");
+  printf("                ¡ El ORACULO HA HABLADO !                \n");
+  if (cant_candidatas > 1){
+    printf("  Hubo un empate de %d peliculas, pero he seleccionado  \n", cant_candidatas);
+    printf("  la mejor valorada por la critica para ti:        \n\n");
+  }
+  else printf("  La pelicula PERFECTA para ti el dia de hoy es:      \n\n");
+  
+  printf("    -> %s (%d) \n", mejorPelicula->title, mejorPelicula->year);
+  printf("    Director: %s\n", mejorPelicula->director);
+  printf("    Rating IMDb: %.1f / 10.0\n", mejorPelicula->rating);
+
+  printf("    Generos: ");
+  char* g = (char*)list_first(mejorPelicula->genres);
+  while(g != NULL){
+    if (g[0] == ' ')g++;
+    printf("%s", g);
+    g = (char*)list_next(mejorPelicula->genres);
+    if (g != NULL) printf(", ");
+  }
+  printf("\n*****************************************************\n");
+}
+
+free(cola_preguntas);
+free(candidatas);
 }
 
 
 int main() {
   char opcion; // Variable para almacenar una opción ingresada por el usuario
                 
-  // Creación de un mapa para almacenar películas, utilizando una función de
-  // comparación que trabaja con claves de tipo string e int.
-  //MAPA PRINCIPAL
+  
   Map *pelis_byid = map_create(is_equal_str);
-  //M. GENEROS
   Map *pelis_bygenres = map_create(is_equal_str);
-  //M. DECADA
   Map *pelis_decada = map_create(is_equal_int);
+  Map *pelis_titulo = map_create(is_equal_str);
 
-  cargar_peliculas(pelis_byid, pelis_bygenres,pelis_decada);
+  cargar_peliculas(pelis_byid, pelis_bygenres,pelis_decada, pelis_titulo);
 
   do {
     mostrarMenuPrincipal();
@@ -496,7 +434,7 @@ int main() {
       //MARATHON MAKER
       break;
     case '4':
-      //CINE ORACLE
+      cineoracle(pelis_byid);
       break;
     }
     presioneTeclaParaContinuar();
