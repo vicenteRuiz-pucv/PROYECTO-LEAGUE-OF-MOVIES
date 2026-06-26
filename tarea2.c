@@ -4,15 +4,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <stdlib.h>
+#include "tdas/queue.h"
 
 typedef struct {
   char id[100];
-  char title[100];
+  char title[300];
   List *genres;
   int year;
   char director[100];
   int similitud;
-} Film;
+  float rating;
+} pelicula;
+
+typedef struct{
+  int tipo;
+  char atributo[50];
+  char texto[200];
+  int usada;
+}preguntaOracle;
+
 
 // Menú principal
 void mostrarMenuPrincipal() {
@@ -72,7 +84,7 @@ void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada) {
   // Lee cada línea del archivo CSV hasta el final
   while ((campos = leer_linea_csv(archivo, ',')) != NULL) {
     // Crea una nueva estructura Film y almacena los datos de cada película
-    Film *peli = (Film *)malloc(sizeof(Film));
+    pelicula *peli = (pelicula *)malloc(sizeof(pelicula));
     strcpy(peli->id, campos[1]);        // Asigna ID
     strcpy(peli->title, campos[5]);     // Asigna título
     peli->genres = split_string(campos[11], ",");       // Inicializa la lista de géneros
@@ -157,7 +169,7 @@ void buscar_por_id(Map *pelis_byid) {
   // Si se encontró el par clave-valor, se extrae y muestra la información de la
   // película
   if (pair != NULL) {
-    Film *peli =
+    pelicula *peli =
         pair->value; // Obtiene el puntero a la estructura de la película
     // Muestra el título y el año de la película
     printf("Título: %s, Año: %d\n", peli->title, peli->year);
@@ -285,6 +297,34 @@ void cinematch(Map* principal, Map* generos, Map* decada,Map* titulos)
       }
 }
 
+void cargar_pool_preguntas(preguntaOracle pool[]){
+  FILE *archivo = fopen("PREGUNTASORACLE.CSV", "r");
+  if (archivo == NULL){
+    printf("ERROR: no se encontro el archivo PREGUNTASORACLE.CSV\n");
+    return;
+  }
+  int count = 0;
+  char linea[300];
+  while (fgets(linea, sizeof(linea), archivo) != NULL){
+    linea[strcspn(linea, "\r\n")] = '\0';
+    if (strlen(linea) == 0)continue;
+
+    char *token = strtok(linea, ";");
+    if (token != NULL) pool[count].tipo = atoi(token);
+
+    token = strtok(NULL, ";");
+    if (token != NULL) strcpy(pool[count].atributo, token);
+
+    token = strtok(NULL, ";");
+    if (token != NULL) strcpy(pool[count].texto, token);
+
+    pool[count].usada = 0;
+    count++;
+  }
+  fclose(archivo);
+  return count;
+}
+
 void cineoracle(Map* pelis_byid){
   limpiarPantalla();
   puts("====================================================");
@@ -357,6 +397,70 @@ void cineoracle(Map* pelis_byid){
         indicen_sweet_spot[cant_sweet_spot] = i;
         cant_sweet_spot++;
       }
+      int distancia = abs(coinciden - (cant_candidatas / 2));
+      if (distancia < mejor_distancia_respaldo){
+        mejor_distancia_respaldo[0] = i;
+        cant_respaldo = 1;
+      }
+      else if (distancia == mejor_distancia_respaldo || distancia == mejor_distancia_respaldo + 1){
+        indices_respaldo[cant_respaldo] = i;
+        cant_respaldo++;
+      }
+    }
+    int indice_elegido;
+    if (cant_sweet_spot > 0){
+      indice_elegido = indices_sweet_spot[rand() % cant_sweet_spot];
+    }
+    else if (cant_respaldo > 0){
+      indice_elegido = indices_respaldo[rand() % cant_respaldo];
+    }
+    else break;
+  }
+  pool[indice_elegido].usada = 1;
+
+  preguntaOracle* pregunta = (preguntaOracle*)malloc(sizeof(preguntaOracle));
+  *pregunta = pool[indice_elegido];
+  queue_insert(cola_preguntas, pregunta);
+
+  preguntaOracle* preguntaActual = (preguntaOracle*)queue_remove(cola_preguntas);
+
+  int respuesta = 0;
+
+  while(1){
+    printf("\n-> %s\n", preguntaActual->texto);
+    printf("[1] SI\n[2] NO\nSeleccion: ");
+    if(scanf(" %d", &respuesta) == 1 && (respuesta == 1 || respuesta == 2))break;
+    printf("Respuesta invalida. Por favor ingresa 1 0 2\n");
+    while(getchar() != '\n');
+  }
+
+  pelicula* p = (pelicula*)list_first(candidatas);
+
+  while(p != NULL){
+    int tiene_atributo = 0;
+
+    if (preguntaActual->tipo == 1){
+      char* g = list_first(p->genres);
+      while (g != NULL){
+        if (g[0] == ' ')g++;
+        if (strcmp(g, preguntaActual->atributo) == 0){
+          tiene_atributo = 1;
+          break;
+        }
+        g = list_next(p->genres);
+      }
+    }
+    else if (preguntaActual->tipo == 2){
+      if (((p->year / 10) * 10) == atoi(preguntaActual->atributo))tiene_atributo = 1;
+    }
+    else if (preguntaActual->tipo == 3){
+      if (((p->year / 10) * 10) == atoi(preguntaActual->atributo))tiene_atributo = 1;
+    }
+    else if (preguntaActual->tipo == 2){
+      if (((p->year / 10) * 10) == atoi(preguntaActual->atributo))tiene_atributo = 1;
+    }
+    else if (preguntaActual->tipo == 2){
+      if (((p->year / 10) * 10) == atoi(preguntaActual->atributo))tiene_atributo = 1;
     }
   }
 }
