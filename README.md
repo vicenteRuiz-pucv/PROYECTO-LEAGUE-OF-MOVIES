@@ -16,6 +16,9 @@ Benjamín Alucema: Desarrollo de CineOracle.
 
 Todos: diseño, comentarios y main.
 
+
+RECORDAR: TODO ES EN INGLES, PARA REFERENCIA REVISAR EL CSV DE PELICULAS "Top1500.csv"
+
 ---
 
 # League Of Movies 🎬 — Plataforma interactiva de recomendación cinematográfica
@@ -440,7 +443,7 @@ A continuación se muestra una sesión de uso que recorre los cuatro modos del p
 
 **2.** El usuario selecciona **opción 1 (CineMatch)** e ingresa `"Inception"`. El sistema calcula afinidad con todas las películas de los mismos géneros (`Action`, `Adventure`, `Sci-Fi`) y devuelve el top 5 liderado por *The Dark Knight* con puntaje 7 (mismo director +3, misma década +2, Action +1, Drama +1... ajustado).
 
-**3.** El usuario selecciona **opción 2 (CineClash)** con género `Action`. `sumLista()` cuenta 312 películas disponibles. Se seleccionan 8 al azar, se montan 7 enfrentamientos. El usuario vota en cada ronda y *The Dark Knight* sale campeón.
+**3.** El usuario selecciona **opción 2 (CineClash)** con género `Action`. Se seleccionan 8 peliculas al azar, se montan 7 enfrentamientos. El usuario vota en cada ronda y *The Dark Knight* sale campeón.
 
 **4.** El usuario selecciona **opción 3 (Marathon Maker)** con género `Drama`, año `1994` y cantidad `3`. El sistema calcula la década `1990`, filtra las películas que cumplan ambos criterios y las ordena por rating. La navegación muestra *Shawshank Redemption* (9.3), *Pulp Fiction* (8.9) y *Forrest Gump* (8.8). El usuario navega con `s`, confirma con `c` y se imprime la maratón final.
 
