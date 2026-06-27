@@ -69,6 +69,20 @@ int is_equal_int(void *key1, void *key2) {
 /**
  * Carga películas desde un archivo CSV y las almacena en un mapa por ID.
  */
+
+void normalizar_minusculas(char* str){
+  for (int i = 0; str[i]; i++){
+    str[i] = tolower((unsigned char)str[i]);
+  }
+}
+
+char *limpiar_espacios(char *str){
+  while(isspace((unsigned char)*str))str++;
+  char *fin = str + strlen(str) - 1;
+  while(fin > str && isspace((unsigned char)*fin)) *fin-- = '\0';
+  return str;
+}
+
 void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada, Map *pelis_titulo) {
   // Intenta abrir el archivo CSV que contiene datos de películas
   FILE *archivo = fopen("Top1500.csv", "r");
