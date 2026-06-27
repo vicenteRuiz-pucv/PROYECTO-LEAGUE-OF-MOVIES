@@ -16,6 +16,7 @@ Benjamín Alucema: Desarrollo de CineOracle.
 
 Todos: diseño, comentarios y main.
 
+---
 
 RECORDAR: TODO ES EN INGLES, PARA REFERENCIA REVISAR EL CSV DE PELICULAS "Top1500.csv"
 
