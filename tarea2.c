@@ -1,14 +1,19 @@
 #include "tdas/extra.h"
 #include "tdas/list.h"
 #include "tdas/map.h"
+#include "tdas/queue.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <stdbool.h>
+#include <time.h>
 #include <time.h>
 #include <ctype.h>
 #include <stdbool.h>
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 #include "tdas/queue.h"
+
 
 typedef struct {
   char id[100];
@@ -17,6 +22,9 @@ typedef struct {
   int year;
   char director[300];
   int similitud;
+
+} pelicula;
+
 
 } pelicula;
 
@@ -29,6 +37,7 @@ typedef struct{
   char texto[200];
   int usada;
 }preguntaOracle;
+
 
 
 
@@ -77,6 +86,9 @@ int is_equal_int(void *key1, void *key2) {
 void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada,Map* pelis_titulo) {
 
 
+void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada,Map* pelis_titulo) {
+
+
 void normalizar_minusculas(char* str){
   for (int i = 0; str[i]; i++){
     str[i] = tolower((unsigned char)str[i]);
@@ -91,6 +103,7 @@ char *limpiar_espacios(char *str){
 }
 
 void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada, Map *pelis_titulo) {
+
 
   // Intenta abrir el archivo CSV que contiene datos de películas
   FILE *archivo = fopen("Top1500.csv", "r");
@@ -113,6 +126,9 @@ void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada, M
     strcpy(peli->title, campos[5]);     // Asigna título
     peli->genres = split_string(campos[11], ",");       // Inicializa la lista de géneros
     peli->year = atoi(campos[10]); // Asigna año, convirtiendo de cadena a entero
+
+
+
 
     strcpy(peli->director,campos[14]);
     
@@ -140,6 +156,13 @@ void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada, M
     }
     
     
+
+    // Obtiene el primer género de la lista de géneros de la película
+    char *genre = list_first(peli->genres);
+    // Itera sobre cada género de la película
+    while (genre != NULL) 
+    {
+
     // Obtiene el primer género de la lista de géneros de la película
     char *genre = list_first(peli->genres);
     // Itera sobre cada género de la película
@@ -160,6 +183,7 @@ void cargar_peliculas(Map *pelis_byid, Map *pelis_bygenres, Map *pelis_decada, M
     while (genre != NULL) {
 
         if (genre[0] == ' ')genre++;
+
 
         // Busca el género en el mapa pelis_bygenres
         MapPair *genre_pair = map_search(pelis_bygenres, genre);
@@ -226,6 +250,217 @@ void buscar_por_id(Map *pelis_byid) {
     printf("La película con id %s no existe\n", id);
   }
 }
+
+void cinematch(Map* principal, Map* generos, Map* decada,Map* titulos)
+{
+  printf("Ingrese el nombre de una Pelicula! : ");
+  int c;
+  while((c = getchar()) != '\n' && c != EOF);
+  
+  //PRIMERO RECIBIMOS EL NOMBRE DE UNA PELICULA.
+  char nombrePelicula[100];
+  MapPair* par = NULL;
+  while(1)
+  {  
+    //LEER EL NOMBRE DE LA PELICULA CON ESPACIOS EN BLANCO
+    fgets(nombrePelicula,sizeof(nombrePelicula),stdin);
+    //ELIMINAR SALTO DE LINEA
+    nombrePelicula[strcspn(nombrePelicula,"\r\n")] = '\0';
+    //HACEMOS LA BUSQUEDA PARA QUE LEA ESPACIOS EN BLANCO!
+    par = map_search(titulos,(void*)nombrePelicula);
+    if(par == NULL)
+    {
+      printf("Actualmente la pelicula ingresada no se encuentra en nuestro catalogo..\n");
+    }
+    else break;
+  }
+
+  
+  
+  //accedemos a el valor del par(la pelicula) en el mapa de titulos
+  pelicula* ingresada = (pelicula*)par->value;
+  printf("procesando afinidad.....\n");
+  //arreglo que tndra el top 5
+  pelicula* top5[5] = {NULL, NULL, NULL, NULL, NULL};
+  //CREAMOS UN MAPA PARA EVITAR REPETICION!
+  Map* procesadas = map_create(is_equal_str);
+
+  //BUSCAR COINCIDENCIAS EN LOS GENEROS
+
+  char* genBase = (char*)list_first(ingresada->genres);
+  while(genBase != NULL)
+  {
+      MapPair* parGenero = map_search(generos,genBase);
+
+      if(parGenero != NULL)
+      {
+        List* listaMismoGenero = (List*) parGenero->value;
+        pelicula* peliEvaluar=(pelicula*) list_first(listaMismoGenero);
+      
+        while(peliEvaluar != NULL)
+          {
+            if(strcmp(peliEvaluar->id,ingresada->id) != 0 && map_search(procesadas,peliEvaluar->id) == NULL)
+            {
+              map_insert(procesadas,peliEvaluar->id,peliEvaluar);
+
+              //CALCULO DEL PUNTAJE!
+              int similitud = 0;
+              //DIRECTOR
+              if(strcmp(ingresada->director,peliEvaluar->director) == 0) similitud += 3;
+              //DECADA
+              if((ingresada->year / 10) == (peliEvaluar->year / 10)) similitud += 2;
+              //CADA GENERO!
+              char* g1 = (char*) list_first(ingresada->genres);
+              while(g1 != NULL)
+                {
+                  char* g2 = (char*)list_first(peliEvaluar->genres);
+                  while(g2 != NULL)
+                    {
+                      if(strcmp(g1,g2) == 0)
+                      {
+                        similitud++;
+                        break;
+                      }
+                      g2= (char *)list_next(peliEvaluar->genres);
+                    }
+                  g1 = (char*)list_next(ingresada->genres);
+                }
+
+              peliEvaluar->similitud = similitud;
+              if(top5[4] == NULL || similitud > top5[4]->similitud)
+              {
+                for(int i = 0; i < 5; i++)
+                  {
+                    if(top5[i]==NULL || similitud > top5[i]->similitud)
+                    {
+                      for(int j = 4; j > i; j--)
+                        {
+                          top5[j] = top5[j-1];
+                        }
+                      top5[i]= peliEvaluar;
+                      break;
+                    }
+                  }
+              }
+              
+            }
+            peliEvaluar= (pelicula*) list_next(listaMismoGenero);
+          }
+          
+      }
+      genBase= (char*)list_next(ingresada->genres);
+  }
+    printf("TOP 5 PELICULAS RECOMENDADAS\n");
+    for(int i = 0; i < 5; i++)
+      {
+        if(top5[i]!=NULL)
+        {
+          printf("%d. Título: %s, Año: %d, Géneros: ",i+1,top5[i]->title,top5[i]->year);
+          char* g= (char*) list_first(top5[i]->genres);
+          while(g != NULL)
+            {
+              printf("%s",g);
+              g= (char*)list_next(top5[i]->genres);
+              if(g!= NULL) printf(", ");
+            }
+          printf(" Puntaje de Afinidad : %i \n",top5[i]->similitud);
+        } 
+      }
+}
+
+
+void cineclash(Map *mapGeneros){
+  char generoElegido[100];
+  MapPair *par = NULL;
+  List *lista_peliculas = NULL;
+  while(par == NULL){
+    printf("Ingrese el genero para iniciar el torneo: "); //pedimos el genero para hacer el torneo
+    scanf(" %[^\n]", generoElegido);
+    par = map_search(mapGeneros, generoElegido); // se busca en el mapa de generos si este existe
+    if(par == NULL){
+      printf("Genero no encontrado. Ingrese un genero valido\n\n");
+    }
+  }
+  lista_peliculas = (List*)par->value;
+  int capacidad = 8; //empezamos con un espacio para 8 peliculas
+  int cantidadPeliculas = 0; //contamos cuantas peliculas de este genero hay
+
+  //creamos un arreglo temporal para guardar la lista de peliculas de el genero elegido
+  pelicula **tempPelis = (pelicula**)malloc(capacidad * sizeof(pelicula *));
+  pelicula *pelis = list_first(lista_peliculas); //empezamos en el inicio de la lista de peliculas
+  while(pelis != NULL){ //recorremos la lista de peliculas
+    if(cantidadPeliculas == capacidad){ // si nos quedamos sin espacio triplicamos la memoria de nuestro arreglo
+      capacidad *= 3;
+      pelicula **extenderArreglo = (pelicula**)realloc(tempPelis, capacidad * sizeof(pelicula *));
+      if(extenderArreglo == NULL){
+        free(tempPelis);
+        return;
+      }
+      tempPelis = extenderArreglo;
+    }
+    tempPelis[cantidadPeliculas] = pelis; // guardamos la pelicula en el arreglo
+    cantidadPeliculas++;
+    pelis = list_next(lista_peliculas);
+  }
+  Queue *torneo = queue_create(NULL); // creamos la cola del torneo
+  int pelisYaEscogidas = 0;
+  int posUsadas[8];
+  while(pelisYaEscogidas < 8){ // escogemos 8 peliculas al azar usando rand asegurando que estas no se repitan
+    int posRandom = rand() % cantidadPeliculas;
+    bool seRepite = false;
+    for(int j = 0; j < pelisYaEscogidas; j++){
+      if(posUsadas[j] == posRandom){
+        seRepite = true;
+        break;
+      }
+    }
+    if(seRepite == false){
+      posUsadas[pelisYaEscogidas] = posRandom;
+      queue_insert(torneo, tempPelis[posRandom]);
+      pelisYaEscogidas++;
+    }
+  }
+  free(tempPelis); //liberamos el arreglo temporal anterior ya que llenamos la cola
+
+  printf("Comienza el CineClash del Genero: %s\n", generoElegido);
+  for(int vs = 1; vs <= 7; vs++){ /* aqui hacemos los enfrentamientos del torneo de cineclash, primero sacamos los dos a enfrentarse 
+  se realiza solamente 7 veces ya que al tener 8 peliculas siempre habran 7 enfrentamientos*/
+    pelicula *peliA = (pelicula*)queue_remove(torneo);
+    pelicula *peliB = (pelicula*)queue_remove(torneo);
+
+    int voto = 0;
+    if(vs == 1 || vs == 2 || vs == 3 || vs == 4)
+      printf("\nCUARTOS DE FINAL DEL CINECLASH!\n");
+    else if(vs == 5 || vs == 6)
+      printf("\nSEMIFINALES DEL CINECLASH!\n");
+    else
+      printf("\nFINAL DEL CINECLASH!\n");
+    
+    while(voto != 1 && voto != 2){
+      printf("Versus %d: [1] %s vs [2] %s\n", vs, peliA->title, peliB->title);
+      printf("Ingresa tu eleccion: ");
+      scanf("%d", &voto);
+      if(voto !=  1 && voto != 2){
+        printf("Voto invalido. Ingrese opcion valida.\n");
+      }
+    }
+    if(voto == 1){ // el ganador de el enfrentamiento vuelve a entrar a la cola para seguir el torneo
+      queue_insert(torneo, peliA);
+      printf("\nEl ganador de esta ronda fue: %s\n", peliA->title);
+    }
+    else{
+      queue_insert(torneo, peliB);
+      printf("\nEl ganador de esta ronda fue: %s\n", peliB->title);
+    }
+  }
+  //sacamos la pelicula ganadora, que es la unica que queda en la cola
+  pelicula *ganador = (pelicula*)queue_remove(torneo);
+  printf("\n-------------------------------------------\n");
+  printf("El Ganador Del CineClash Es: %s\n", ganador->title);
+  printf("-------------------------------------------\n");
+  queue_clean(torneo); //limpiamos memoria de la cola
+}
+
 
 
 
@@ -655,14 +890,20 @@ int main() {
   Map *pelis_bygenres = map_create(is_equal_str);
   Map *pelis_decada = map_create(is_equal_int);
 
+
+
   //M. TITULO
   Map *pelis_titulo = map_create(is_equal_str);
   
   cargar_peliculas(pelis_byid, pelis_bygenres,pelis_decada,pelis_titulo);
 
+  srand(time(NULL)); //para no generar la misma serie de numeros aleatorios cada vez que se inicie el programa
+
+
   Map *pelis_titulo = map_create(is_equal_str);
 
   cargar_peliculas(pelis_byid, pelis_bygenres,pelis_decada, pelis_titulo);
+
 
 
   do {
@@ -675,7 +916,7 @@ int main() {
       cinematch(pelis_byid,pelis_bygenres,pelis_decada,pelis_titulo);
       break;
     case '2':
-      //CINECLASH
+      cineclash(pelis_bygenres);
       break;
     case '3':
       //MARATHON MAKER
