@@ -294,15 +294,6 @@ void cinematch(Map* principal, Map* generos, Map* decada,Map* titulos)
       }
 }
 
-int sumLista(List *lista){
-  int sum = 0;
-  pelicula *peli = list_first(lista);
-  while(peli != NULL){
-    sum++;
-    peli = list_next(lista);
-  }
-  return sum;
-}
 
 void cineclash(Map *mapGeneros){
   char generoElegido[100];
@@ -317,21 +308,30 @@ void cineclash(Map *mapGeneros){
     }
   }
   lista_peliculas = (List*)par->value;
-  int peliculasDelGenero = sumLista(lista_peliculas); //contamos cuantas peliculas de este genero hay
+  int capacidad = 8; //empezamos con un espacio para 8 peliculas
+  int cantidadPeliculas = 0; //contamos cuantas peliculas de este genero hay
 
   //creamos un arreglo temporal para guardar la lista de peliculas de el genero elegido
-  pelicula **tempPelis = (pelicula**)malloc(peliculasDelGenero * sizeof(pelicula *));
-  int i = 0;
-  pelicula *pelis = list_first(lista_peliculas);
-  while(pelis != NULL){
-    tempPelis[i] = pelis;
-    i++;
+  pelicula **tempPelis = (pelicula**)malloc(capacidad * sizeof(pelicula *));
+  pelicula *pelis = list_first(lista_peliculas); //empezamos en el inicio de la lista de peliculas
+  while(pelis != NULL){ //recorremos la lista de peliculas
+    if(cantidadPeliculas == capacidad){ // si nos quedamos sin espacio triplicamos la memoria de nuestro arreglo
+      capacidad *= 3;
+      pelicula **extenderArreglo = (pelicula**)realloc(tempPelis, capacidad * sizeof(pelicula *));
+      if(extenderArreglo == NULL){
+        free(tempPelis);
+        return;
+      }
+      tempPelis = extenderArreglo;
+    }
+    tempPelis[cantidadPeliculas] = pelis; // guardamos la pelicula en el arreglo
+    cantidadPeliculas++;
     pelis = list_next(lista_peliculas);
   }
-  Queue *torneo = queue_create(NULL);
+  Queue *torneo = queue_create(NULL); // creamos la cola del torneo
   int pelisYaEscogidas = 0;
   int posUsadas[8];
-  while(pelisYaEscogidas < 8){
+  while(pelisYaEscogidas < 8){ // escogemos 8 peliculas al azar usando rand asegurando que estas no se repitan
     int posRandom = rand() % peliculasDelGenero;
     bool seRepite = false;
     for(int j = 0; j < pelisYaEscogidas; j++){
@@ -346,10 +346,11 @@ void cineclash(Map *mapGeneros){
       pelisYaEscogidas++;
     }
   }
-  free(tempPelis);
+  free(tempPelis); //liberamos el arreglo temporal anterior ya que llenamos la cola
 
   printf("Comienza el CineClash del Genero: %s\n", generoElegido);
-  for(int vs = 1; vs <= 7; vs++){
+  for(int vs = 1; vs <= 7; vs++){ /* aqui hacemos los enfrentamientos del torneo de cineclash, primero sacamos los dos a enfrentarse 
+  se realiza solamente 7 veces ya que al tener 8 peliculas siempre habran 7 enfrentamientos*/
     pelicula *peliA = (pelicula*)queue_remove(torneo);
     pelicula *peliB = (pelicula*)queue_remove(torneo);
 
@@ -366,10 +367,10 @@ void cineclash(Map *mapGeneros){
       printf("Ingresa tu eleccion: ");
       scanf("%d", &voto);
       if(voto !=  1 && voto != 2){
-        printf("Voto invalido\n");
+        printf("Voto invalido. Ingrese opcion valida.\n");
       }
     }
-    if(voto == 1){
+    if(voto == 1){ // el ganador de el enfrentamiento vuelve a entrar a la cola para seguir el torneo
       queue_insert(torneo, peliA);
       printf("\nEl ganador de esta ronda fue: %s\n", peliA->title);
     }
@@ -378,11 +379,12 @@ void cineclash(Map *mapGeneros){
       printf("\nEl ganador de esta ronda fue: %s\n", peliB->title);
     }
   }
+  //sacamos la pelicula ganadora, que es la unica que queda en la cola
   pelicula *ganador = (pelicula*)queue_remove(torneo);
   printf("\n-------------------------------------------\n");
   printf("El Ganador Del CineClash Es: %s\n", ganador->title);
   printf("-------------------------------------------\n");
-  queue_clean(torneo);
+  queue_clean(torneo); //limpiamos memoria de la cola
 }
 
 
