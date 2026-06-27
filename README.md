@@ -48,7 +48,7 @@ Toda la información se indexa en **cuatro mapas de hash** que permiten acceso e
 |---|---|---|
 | `id` | `char[100]` | Identificador único numérico |
 | `title` | `char[300]` | Título de la película |
-| `genres` | `List*` | Lista enlazada de géneros |
+| `genres` | `List*` | Lista de géneros |
 | `year` | `int` | Año de estreno |
 | `director` | `char[300]` | Nombre del director |
 | `rating` | `float` | Puntuación IMDb (0.0 – 10.0) |
