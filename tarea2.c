@@ -332,7 +332,7 @@ void cineclash(Map *mapGeneros){
   int pelisYaEscogidas = 0;
   int posUsadas[8];
   while(pelisYaEscogidas < 8){ // escogemos 8 peliculas al azar usando rand asegurando que estas no se repitan
-    int posRandom = rand() % peliculasDelGenero;
+    int posRandom = rand() % cantidadPeliculas;
     bool seRepite = false;
     for(int j = 0; j < pelisYaEscogidas; j++){
       if(posUsadas[j] == posRandom){
