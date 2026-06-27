@@ -5,6 +5,18 @@ Team - League of Data.
 Fecha: 24-05-2026.
 
 
+CONTRIBUCIONES: 
+
+Vicente Ruiz: Desarrollo de la función CineMatch.
+
+Fabián Olivares: Implementación del modo CineClash.
+
+Sebastián Pino: Creación de Marathon Maker.
+
+Benjamín Alucema: Desarrollo de CineOracle.
+
+Todos: diseño, comentarios y main.
+
 ---
 
 # League Of Movies 🎬 — Plataforma interactiva de recomendación cinematográfica
