@@ -5,6 +5,7 @@
 typedef struct Node {
   void *data;
   struct Node *next;
+  struct Node *prev;
 } Node;
 
 struct List {
@@ -54,6 +55,10 @@ void list_pushFront(List *L, void *data) {
   }
   newNode->data = data;
   newNode->next = L->head;
+  newNode->prev = NULL;
+  if(L->head != NULL){
+    L->head->prev = newNode;
+  }
   L->head = newNode;
   if (L->tail == NULL) { // Si la lista estaba vacía
     L->tail = newNode;
@@ -70,6 +75,7 @@ void list_pushBack(List *L, void *data) {
     return; // Fallo en la asignación de memoria
   }
   newNode->data = data;
+  newNode->prev = L->tail;
   newNode->next = NULL;
   if (L->tail == NULL) { // Si la lista está vacía
     L->head = newNode;
@@ -91,6 +97,10 @@ void list_pushCurrent(List *L, void *data) {
   }
   newNode->data = data;
   newNode->next = L->current->next;
+  newNode->prev = L->current;
+  if(L->current->next != NULL){
+    L->current->next->prev = newNode;
+  }
   L->current->next = newNode;
   if (L->current == L->tail) {
     L->tail = newNode; // Actualizar tail si se inserta al final
@@ -136,6 +146,14 @@ void *list_popBack(List *L) {
 
 int list_size(List *L){
     return L->size;
+}
+
+void *list_prev(List *L){
+  if(L == NULL || L->current == NULL || L->current->prev == NULL){
+    return NULL;
+  }
+  L->current = L->current->prev;
+  return L->current->data;
 }
 
 void *list_popCurrent(List *L) {

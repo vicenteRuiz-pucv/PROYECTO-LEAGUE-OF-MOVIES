@@ -36,4 +36,6 @@ void list_clean(List *L);
 
 int list_size(List* L);
 
+void *list_prev(List *L);
+
 #endif
