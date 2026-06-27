@@ -174,8 +174,11 @@ void buscar_por_id(Map *pelis_byid) {
   }
 }
 
+
+//FUNCION CINEMATCH
 void cinematch(Map* principal, Map* generos, Map* decada,Map* titulos)
 {
+  //PRINTEAMOS PARA AÑADIR FORMATO
   printf("Ingrese el nombre de una Pelicula! : ");
   int c;
   while((c = getchar()) != '\n' && c != EOF);
@@ -209,21 +212,25 @@ void cinematch(Map* principal, Map* generos, Map* decada,Map* titulos)
   Map* procesadas = map_create(is_equal_str);
 
   //BUSCAR COINCIDENCIAS EN LOS GENEROS
-
+  //ITERAMOS LA LISTA DE TODOS LOS GENEROS!
   char* genBase = (char*)list_first(ingresada->genres);
   while(genBase != NULL)
   {
-      MapPair* parGenero = map_search(generos,genBase);
-
+    //obtenemos el par de el genero iesimo..  
+    MapPair* parGenero = map_search(generos,genBase);
+      
       if(parGenero != NULL)
       {
+        
         List* listaMismoGenero = (List*) parGenero->value;
         pelicula* peliEvaluar=(pelicula*) list_first(listaMismoGenero);
-      
+        //recorremos todas las peliculas por genero..
         while(peliEvaluar != NULL)
           {
+            //no evaluar peliculas procesadas y no evaluarla consigo misma
             if(strcmp(peliEvaluar->id,ingresada->id) != 0 && map_search(procesadas,peliEvaluar->id) == NULL)
             {
+              //insertamos en el mapa de ya procesadas
               map_insert(procesadas,peliEvaluar->id,peliEvaluar);
 
               //CALCULO DEL PUNTAJE!
@@ -242,13 +249,16 @@ void cinematch(Map* principal, Map* generos, Map* decada,Map* titulos)
                       if(strcmp(g1,g2) == 0)
                       {
                         similitud++;
-                        break;
+                        break; //salir del ciclo interior si se encontro coincidencia
                       }
                       g2= (char *)list_next(peliEvaluar->genres);
                     }
                   g1 = (char*)list_next(ingresada->genres);
                 }
+              //registrar en el struct la similitud
 
+
+              //algoritmo para ordenar el arreglo de el top 5!!
               peliEvaluar->similitud = similitud;
               if(top5[4] == NULL || similitud > top5[4]->similitud)
               {
@@ -267,13 +277,16 @@ void cinematch(Map* principal, Map* generos, Map* decada,Map* titulos)
               }
               
             }
+            //pasar a la siguiente pelicula
             peliEvaluar= (pelicula*) list_next(listaMismoGenero);
           }
           
       }
-      genBase= (char*)list_next(ingresada->genres);
+    //pasar al siguiente genero  
+    genBase= (char*)list_next(ingresada->genres);
   }
-    printf("TOP 5 PELICULAS RECOMENDADAS\n");
+  //MOSTRAMOS EL TOP 5 DE LAS PELICULAS RECOMENDADAS  
+  printf("TOP 5 PELICULAS RECOMENDADAS\n");
     for(int i = 0; i < 5; i++)
       {
         if(top5[i]!=NULL)
