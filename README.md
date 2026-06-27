@@ -407,56 +407,6 @@ Limpia la pantalla con `limpiarPantalla()` e imprime el menú principal con las 
 
 ---
 
-## Funcionalidades extra implementadas
-
-### `normalizar_minusculas()` — Conversión a minúsculas para búsqueda insensible a mayúsculas
-
-Convierte todo el texto ingresado por el usuario a minúsculas antes de buscarlo en el mapa. Para que esto funcione, las claves del mapa también deben almacenarse en minúsculas al momento de cargar el CSV. Así `"the dark knight"`, `"The Dark Knight"` y `"THE DARK KNIGHT"` encuentran siempre el mismo resultado.
-
-
-**Dónde se aplica:** en `cinematch()` antes de `map_search(titulos)`, y en `cineclash()` / `marathon_maker()` antes de `map_search(generos)`. También debe aplicarse al insertar las claves en `cargar_peliculas()`.
-
-**Ejemplo:**
-```
-Ingrese el nombre de una Pelicula! : THE DARK KNIGHT
-→ normalizar_minusculas() convierte a: "the dark knight"
-→ map_search() encuentra la película correctamente
-
-Ingrese el nombre de una Pelicula! : The Dark Knight
-→ normalizar_minusculas() convierte a: "the dark knight"
-→ map_search() encuentra la película correctamente
-
-Ingrese el genero para iniciar el torneo: ACTION
-→ normalizar_minusculas() convierte a: "action"
-→ map_search(generos, "action") encuentra la lista correctamente
-```
-
----
-
-### `limpiar_espacios()` — Eliminación de espacios al inicio y al final
-
-Elimina espacios y tabulaciones al inicio y al final del string ingresado. Evita que un espacio accidental antes o después del nombre haga fallar la búsqueda en el mapa.
-
-
-**Dónde se aplica:** inmediatamente después de `fgets()` en `cinematch()`, `cineclash()` y `marathon_maker()`, antes de cualquier búsqueda.
-
-**Ejemplo:**
-```
-Ingrese el nombre de una Pelicula! :    Inception   
-→ limpiar_espacios() retorna puntero a: "Inception"
-→ map_search() encuentra la película correctamente
-
-Ingrese el genero: "  drama  "
-→ limpiar_espacios() retorna: "drama"
-→ Combinado con normalizar_minusculas(): búsqueda exitosa
-```
-
----
-
-
-
----
-
 ## Justificación de TDAs utilizados
 
 ### Mapa de hash (`Map`)
